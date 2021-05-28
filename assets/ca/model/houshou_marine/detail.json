@@ -1,0 +1,19 @@
+{
+    "animation": [{
+            "fileName": "♡チカっとチカ千花っ♡.vmd",
+            "pc": {
+                "rotationY": 0,
+                "positionX": 0,
+                "cameraZ": 35,
+                "cameraY": 13
+            },
+            "sp": {
+                "rotationY": 0,
+                "positionX": -1,
+                "cameraZ": 35,
+                "cameraY": 13
+            },
+            "isHidden": false
+        }
+    ]
+}

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+    </head>
+    <body>
+        <div id="main">
+			<svg></svg>
+		</div>
+        <script>
+            //code 修改自https://observablehq.com/@d3/force-directed-lattice?collection=@d3/d3-force
+            const width = 1000
+            const height = 1000
+
+            const mkData = () => {
+                const n = 20
+                const nodes = Array.from({length: n * n}, (_, i) => ({index: i}))
+                const links = []
+                for (let y = 0; y < n; ++y) {
+                    for (let x = 0; x < n; ++x) {
+                    if (y > 0) links.push({source: (y - 1) * n + x, target: y * n + x})
+                    if (x > 0) links.push({source: y * n + (x - 1), target: y * n + x})
+                    }
+                }
+                return {nodes, links}
+            }
+
+            const rawData = mkData()
+
+            //利用Object.keys將原本data裡面的property map成prototype上的property，避免d3.force產生的資料與原資料有衝到
+            const links = rawData.links.map(e => Object.create(e))
+            const nodes = rawData.nodes.map(e => Object.create(e))
+			
+
+            //d3的重力模擬器
+            const simulation = d3
+                                .forceSimulation(nodes)
+                                //設置互斥以及互斥的程度
+                                .force('charge', d3.forceManyBody().strength(-50))
+                                //依照link設置節點間的連線距離
+                                .force('link', 
+                                        d3
+                                        .forceLink(links)
+                                        //節點間的引力強度
+                                        .strength(0.1)
+                                        //節點間的距離
+                                        .distance(20)
+                                        //對於引力直跌帶的次數(不知道是什麼)
+                                        .iterations(2)
+                                )
+                                //代表要把引力點的中心放哪邊
+								.force("center", d3.forceCenter(1000 / 2, 1000 / 2))
+								//tick代表每經過一段時間，都會觸發tick事件(就是時鐘的聲音)，callback調用ticked，更新的内容就写在它的监听器里就好
+                                .on("tick", ticked)
+			const svg = d3
+						.select('svg')
+						.attr('width', 1000)
+						.attr('height', 1000)
+						.attr("viewport", "0 0 1000 1000")
+						
+			const g = svg.append('g')
+			const linkSVG = g
+							.append('g')
+							.selectAll('line')
+							.data(links)
+							.enter()
+							.append('line')
+							.style('stroke', '#0d101a')
+							.style('stroke-width', '2')
+							
+			const nodeSVG = g
+							.append('g')
+							.selectAll('circle')
+							.data(nodes)
+							.enter()
+							.append('circle')
+							.attr('r', 10)
+							.attr('fill', '#2980b9')
+							.call(
+								d3.drag()
+									.on('start', dragstarted)
+									.on('drag', dragged)
+									.on('end', dragended)
+							)
+
+			//每次animation 更新資料，畫相應的座標點
+			function ticked(){
+				linkSVG
+					.attr('x1', d => d.source.x)
+					.attr('y1', d => d.source.y)
+					.attr('x2', d => d.target.x)
+					.attr('y2', d => d.target.y)
+					
+				nodeSVG
+					.attr('transform', d => `translate(${d.x},${d.y})`)
+				
+			}
+			
+			
+            function dragstarted(d){
+				//指當前的事件之外，目前有多少事件正在發生
+				
+				/**
+				 這邊再說，假設當你只有一個drag event發生時，d3.event.active會等於0
+				 就會進入這個if，而進入這個if之後，就會啟動ticked進行點的重繪
+				 接著會將該點固定在原本該點的x y座標上
+				 如果不是0的話，代表有其他點也正在被拉，所以哪些其他的點也已經觸發了重繪ticked了
+				*/
+                if(!d3.event.active){
+                    simulation.alphaTarget(0.3).restart()    
+                }
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+			
+			//在拖拉的時候 設定點的位置於數標位置
+            function dragged(d){
+                d.fx = d3.event.x
+                d.fy = d3.event.x
+            }
+            function dragended(d){
+                if(!d3.event.active){
+                    simulation.alphaTarget(0)
+                }
+				
+				//將位置釋放掉，來到原本所在的地方
+				d.fx = null
+                d.fy = null
+            }
+            
+        </script>
+    </body>
+</html>
